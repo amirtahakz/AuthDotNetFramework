@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using Ui.Client.Models;
 
 namespace Ui.Client.Controllers
 {
@@ -13,6 +14,7 @@ namespace Ui.Client.Controllers
             return View();
         }
 
+        [Authorize(Roles =UserRolesVm.Admin)]
         public ActionResult About()
         {
             ViewBag.Message = "Your application description page.";

@@ -7,9 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Ui.Core.ViewModels
+namespace Ui.Client.Models
 {
-    public class IndexViewModel
+    public class IndexVm
     {
         public bool HasPassword { get; set; }
         public IList<UserLoginInfo> Logins { get; set; }
@@ -18,18 +18,18 @@ namespace Ui.Core.ViewModels
         public bool BrowserRemembered { get; set; }
     }
 
-    public class ManageLoginsViewModel
+    public class ManageLoginsVm
     {
         public IList<UserLoginInfo> CurrentLogins { get; set; }
         public IList<AuthenticationDescription> OtherLogins { get; set; }
     }
 
-    public class FactorViewModel
+    public class FactorVm
     {
         public string Purpose { get; set; }
     }
 
-    public class SetPasswordViewModel
+    public class SetPasswordVm
     {
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 6)]
@@ -43,7 +43,7 @@ namespace Ui.Core.ViewModels
         public string ConfirmPassword { get; set; }
     }
 
-    public class ChangePasswordViewModel
+    public class ChangePasswordVm
     {
         [Required]
         [DataType(DataType.Password)]
@@ -62,7 +62,7 @@ namespace Ui.Core.ViewModels
         public string ConfirmPassword { get; set; }
     }
 
-    public class AddPhoneNumberViewModel
+    public class AddPhoneNumberVm
     {
         [Required]
         [Phone]
@@ -70,7 +70,7 @@ namespace Ui.Core.ViewModels
         public string Number { get; set; }
     }
 
-    public class VerifyPhoneNumberViewModel
+    public class VerifyPhoneNumberVm
     {
         [Required]
         [Display(Name = "Code")]
@@ -82,7 +82,7 @@ namespace Ui.Core.ViewModels
         public string PhoneNumber { get; set; }
     }
 
-    public class ConfigureTwoFactorViewModel
+    public class ConfigureTwoFactorVm
     {
         public string SelectedProvider { get; set; }
         public ICollection<System.Web.Mvc.SelectListItem> Providers { get; set; }

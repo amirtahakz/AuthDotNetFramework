@@ -60,12 +60,8 @@ namespace Ui.Core.Services
 
 		#region GetById|GetByIdAsync
 
-		public virtual TEntity GetById(long id)
+		public virtual TEntity GetById(Guid id)
 		{
-			if (id == 0)
-			{
-				throw new Exception("The ID should not be zero");
-			}
 			if (!_dbset.Any(i => i.Id == id))
 			{
 				throw new Exception("The ID you are looking for is not exist");
@@ -77,12 +73,8 @@ namespace Ui.Core.Services
 			}
 			return model;
 		}
-		public virtual async Task<TEntity> GetByIdAsync(long id)
+		public virtual async Task<TEntity> GetByIdAsync(Guid id)
 		{
-			if (id == 0)
-			{
-				throw new Exception("The ID should not be zero");
-			}
 			if (!_dbset.Any(i => i.Id == id))
 			{
 				throw new Exception("The ID you are looking for is not exist");
@@ -187,7 +179,7 @@ namespace Ui.Core.Services
 			}
 
 		}
-		public virtual async Task<bool> DeleteAsync(long id)
+		public virtual async Task<bool> DeleteAsync(Guid id)
 		{
 			try
 			{
@@ -223,7 +215,7 @@ namespace Ui.Core.Services
 			}
 
 		}
-		public virtual async Task<bool> RemoveAsync(long id)
+		public virtual async Task<bool> RemoveAsync(Guid id)
 		{
 			try
 			{

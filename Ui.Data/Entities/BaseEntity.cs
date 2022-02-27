@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
@@ -12,13 +13,14 @@ namespace Ui.Data.Entities
 		#region Properties
 
 		[Key]
-		public long Id { get; protected set; }
+        public Guid Id { get; protected set; }
 
-		[Required(ErrorMessage = "{0} is required.")]
-		public DateTime DateCreated { get; set; }
+        [Required(ErrorMessage = "{0} is required.")]
+        public DateTime DateCreated { get; set; } = DateTime.Now;
 
-		[Required(ErrorMessage = "{0} is required.")]
-		public bool IsRemove { get; set; }
+        [DefaultValue(false)]
+        [Required(ErrorMessage = "{0} is required.")]
+        public bool IsRemove { get; set; }
 
 		#endregion
 	}

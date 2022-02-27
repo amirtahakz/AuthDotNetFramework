@@ -1,29 +1,27 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Web.Mvc;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace Ui.Core.ViewModels
+namespace Ui.Client.Models
 {
-    public class ExternalLoginConfirmationViewModel
+    public class ExternalLoginConfirmationVm
     {
         [Required]
         [Display(Name = "Email")]
         public string Email { get; set; }
     }
 
-    public class ExternalLoginListViewModel
+    public class ExternalLoginListVm
     {
         public string ReturnUrl { get; set; }
     }
 
-    public class ForgotViewModel
+    public class ForgotVm
     {
         [Required]
         [Display(Name = "Email")]
         public string Email { get; set; }
     }
 
-    public class LoginViewModel
+    public class LoginVm
     {
         [Required]
         [Display(Name = "Email")]
@@ -39,7 +37,7 @@ namespace Ui.Core.ViewModels
         public bool RememberMe { get; set; }
     }
 
-    public class RegisterViewModel
+    public class RegisterVm
     {
         [Required]
         [EmailAddress]
@@ -63,7 +61,7 @@ namespace Ui.Core.ViewModels
         public string ConfirmPassword { get; set; }
     }
 
-    public class ResetPasswordViewModel
+    public class ResetPasswordVm
     {
         [Required]
         [EmailAddress]
@@ -81,10 +79,12 @@ namespace Ui.Core.ViewModels
         [System.ComponentModel.DataAnnotations.Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; }
 
+
+        [Required]
         public string Code { get; set; }
     }
 
-    public class ForgotPasswordViewModel
+    public class ForgotPasswordVm
     {
         [Required]
         [EmailAddress]
@@ -101,5 +101,19 @@ namespace Ui.Core.ViewModels
 
         [Required(ErrorMessage = "{0} is required.")]
         public string Code { get; set; }
+    }
+
+    public class SendEmailCodeVm
+    {
+        [Required]
+        [EmailAddress]
+        [Display(Name = "Email")]
+        public string Email { get; set; }
+    }
+
+    public class UserRolesVm
+    {
+        public const string Admin = "Admin";
+        public const string User = "User";
     }
 }

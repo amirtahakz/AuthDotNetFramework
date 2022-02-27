@@ -20,23 +20,6 @@ namespace Ui.Client
     {
         public Task SendAsync(IdentityMessage message)
         {
-            // Plug in your email service here to send an email.
-            MailMessage mail = new MailMessage()
-            {
-                From = new MailAddress("amirtahakazemtabarzahraei@gmail.com", "نام نمایشی"),
-                To = { message.Destination },
-                Subject = message.Subject,
-                Body = message.Body,
-                IsBodyHtml = true,
-            };
-            SmtpClient smtpServer = new SmtpClient("smtp.gmail.com", 587) // Host => forExample smtp.gmail.com
-            {
-                UseDefaultCredentials = true,
-                Credentials = new System.Net.NetworkCredential("amirtahakazemtabarzahraei@gmail.com", "amirtahafilm"), // UserName == Email
-                EnableSsl = true,
-                DeliveryMethod = SmtpDeliveryMethod.Network
-            };
-            smtpServer.Send(mail);
             return Task.FromResult(0);
         }
     }
@@ -72,10 +55,10 @@ namespace Ui.Client
             manager.PasswordValidator = new PasswordValidator
             {
                 RequiredLength = 6,
-                RequireNonLetterOrDigit = true,
-                RequireDigit = true,
-                RequireLowercase = true,
-                RequireUppercase = true,
+                RequireNonLetterOrDigit = false,
+                RequireDigit = false,
+                RequireLowercase = false,
+                RequireUppercase = false,
             };
 
             // Configure user lockout defaults
@@ -122,6 +105,17 @@ namespace Ui.Client
         public static ApplicationSignInManager Create(IdentityFactoryOptions<ApplicationSignInManager> options, IOwinContext context)
         {
             return new ApplicationSignInManager(context.GetUserManager<ApplicationUserManager>(), context.Authentication);
+        }
+    }
+
+    // Configure the application Role manager which is used in this application.
+    public class ApplicationRoleManager : RoleManager<IdentityRole>
+    {
+        public ApplicationRoleManager(IRoleStore<IdentityRole, string> roleStore) : base(roleStore) { }
+        public static ApplicationRoleManager Create(IdentityFactoryOptions<ApplicationRoleManager> options , IOwinContext context)
+        {
+            var applicationRoleManager = new ApplicationRoleManager(new RoleStore<IdentityRole>(context.Get<ApplicationDbContext>()));
+            return applicationRoleManager;
         }
     }
 }

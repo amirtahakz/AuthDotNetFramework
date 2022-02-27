@@ -13,8 +13,7 @@ namespace Ui.Core.Services
     {
         #region Connections
 
-        //At First Add NinjectController
-        //ninjectKernel.Bind<IExampleService>().To<ExampleService>();
+        //At First Add Unity
         public ExampleService(ApplicationDbContext context) : base(context) { }
 
         #endregion

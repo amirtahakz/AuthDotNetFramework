@@ -12,8 +12,9 @@ using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.DataProtection;
 using Microsoft.VisualBasic.ApplicationServices;
 using Ui.Core.Repositories;
-using Ui.Core.ViewModels;
 using Ui.Data.Entities;
+using Ui.Client.Models;
+using Ui.Core.ViewModels;
 
 namespace Ui.Client.Controllers
 {
@@ -25,10 +26,13 @@ namespace Ui.Client.Controllers
         private ApplicationSignInManager _signInManager;
         private ApplicationUserManager _userManager;
         private IExampleService _exampleService;
+        private IEmailService _emailService;
+        private ApplicationRoleManager _roleManager = null;
 
-        public AccountController(IExampleService exampleService)
+        public AccountController(IExampleService exampleService , IEmailService emailService)
         {
             _exampleService = exampleService;
+            _emailService = emailService;
         }
 
         public AccountController(ApplicationUserManager userManager, ApplicationSignInManager signInManager)
@@ -37,6 +41,17 @@ namespace Ui.Client.Controllers
             SignInManager = signInManager;
         }
 
+        protected ApplicationRoleManager RoleManager
+        {
+            get
+            {
+                return _roleManager ?? Request.GetOwinContext().GetUserManager<ApplicationRoleManager>();
+            }
+            private set
+            {
+                _roleManager = value;
+            }
+        }
         public ApplicationSignInManager SignInManager
         {
             get
@@ -61,9 +76,11 @@ namespace Ui.Client.Controllers
             }
         }
 
+
+
         #endregion
 
-        #region Methods
+        #region Controllers
 
 
         [AllowAnonymous]
@@ -77,7 +94,7 @@ namespace Ui.Client.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Login(LoginViewModel model, string returnUrl)
+        public async Task<ActionResult> Login(LoginVm model, string returnUrl)
         {
             if (!ModelState.IsValid) return View(model);
 
@@ -120,12 +137,10 @@ namespace Ui.Client.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Register(RegisterViewModel model)
+        public async Task<ActionResult> Register(RegisterVm model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            if (!ModelState.IsValid) return View(model);
+
 
             var email = await UserManager.FindByEmailAsync(model.Email);
             if (email != null)
@@ -151,14 +166,54 @@ namespace Ui.Client.Controllers
                 }
             }
 
+            var user = await UserManager.FindByEmailAsync(model.Email);
+
+            if (!await RoleManager.RoleExistsAsync(UserRolesVm.Admin))
+                await RoleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.Admin });
+
+            if (!await RoleManager.RoleExistsAsync(UserRolesVm.User))
+                await RoleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.User });
+
+            if (await RoleManager.RoleExistsAsync(UserRolesVm.User))
+                await UserManager.AddToRoleAsync(user.Id, UserRolesVm.User);
+
+            // Send Email Confirmation Code
+            var code = await UserManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
+            await _emailService.SendEmailAsync(new EmailModel(user.Email, "Email confirmation", "Your security code is" + code));
+
+            return RedirectToAction("ConfirmEmailCode", new { email = model.Email });
+        }
+
+        [AllowAnonymous]
+        public ActionResult SendEmailCodeVerification()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> SendEmailCodeVerification(SendEmailCodeVm model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
             // Send Email Confirmation Code
             var user = await UserManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "User not found");
+                return View(model);
+            }
+            if (user.EmailConfirmed)
+            {
+                ModelState.AddModelError(string.Empty, "User email confirmed before");
+                return View(model);
+            }
             var code = await UserManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
-            await UserManager.EmailService.SendAsync(new IdentityMessage() { Body = "Your security code is: " + code, Destination = user.Email, Subject = "Email confirmation" });
-
-
-            return RedirectToAction("ConfirmEmailCode", new { email = user.Email });
+            await _emailService.SendEmailAsync(new EmailModel(user.Email, "Email confirmation", "Your security code is" + code));
+            return RedirectToAction("Login");
         }
+
 
 
         [AllowAnonymous]
@@ -196,6 +251,7 @@ namespace Ui.Client.Controllers
             }
 
             user.EmailConfirmed = true;
+            user.PhoneNumberConfirmed = false;
             await UserManager.UpdateAsync(user);
 
             return RedirectToAction("Login");
@@ -213,7 +269,7 @@ namespace Ui.Client.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        public async Task<ActionResult> ForgotPassword(ForgotPasswordVm model)
         {
             if (!ModelState.IsValid)
             {
@@ -234,7 +290,7 @@ namespace Ui.Client.Controllers
             // Send an email with this link
             string code = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
             var callbackUrl = Url.Action("ResetPassword", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
-            await UserManager.EmailService.SendAsync(new IdentityMessage { Destination = user.Email , Subject = "Reset Password" , Body = "Please reset your password by clicking <a href=\"" + callbackUrl + "\">here</a>" });
+            await _emailService.SendEmailAsync(new EmailModel(user.Email, "Reset Password", "Please reset your password by clicking <a href=\"" + callbackUrl + "\">here</a>"));
             return RedirectToAction("ForgotPasswordConfirmation", "Account");
 
         }
@@ -257,31 +313,19 @@ namespace Ui.Client.Controllers
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> ResetPassword(ResetPasswordViewModel model)
+        public async Task<ActionResult> ResetPassword(ResetPasswordVm model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            if (!ModelState.IsValid) return View(model);
+
+
             var user = await UserManager.FindByNameAsync(model.Email);
-            if (user == null)
-            {
-                // Don't reveal that the user does not exist
-                return RedirectToAction("ResetPasswordConfirmation", "Account");
-            }
+            if (user == null) return RedirectToAction("ResetPasswordConfirmation", "Account");
+
+
             var result = await UserManager.ResetPasswordAsync(user.Id, model.Code, model.Password);
-            if (result.Succeeded)
-            {
-                return RedirectToAction("ResetPasswordConfirmation", "Account");
-            }
+            if (result.Succeeded) return RedirectToAction("Login", "Account");
+
             AddErrors(result);
-            return View();
-        }
-
-
-        [AllowAnonymous]
-        public ActionResult ResetPasswordConfirmation()
-        {
             return View();
         }
 
@@ -318,14 +362,14 @@ namespace Ui.Client.Controllers
                     // If the user does not have an account, then prompt the user to create an account
                     ViewBag.ReturnUrl = returnUrl;
                     ViewBag.LoginProvider = loginInfo.Login.LoginProvider;
-                    return View("ExternalLoginConfirmation", new ExternalLoginConfirmationViewModel { Email = loginInfo.Email });
+                    return View("ExternalLoginConfirmation", new ExternalLoginConfirmationVm { Email = loginInfo.Email });
             }
         }
 
         [HttpPost]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> ExternalLoginConfirmation(ExternalLoginConfirmationViewModel model, string returnUrl)
+        public async Task<ActionResult> ExternalLoginConfirmation(ExternalLoginConfirmationVm model, string returnUrl)
         {
             if (User.Identity.IsAuthenticated)
             {
