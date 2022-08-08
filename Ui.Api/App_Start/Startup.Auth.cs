@@ -13,7 +13,6 @@ using Microsoft.Owin.Security.Google;
 using Microsoft.Owin.Security.Jwt;
 using Microsoft.Owin.Security.OAuth;
 using Owin;
-using Ui.Api.Providers;
 using Ui.Data.Context;
 
 namespace Ui.Api

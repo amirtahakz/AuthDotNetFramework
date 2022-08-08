@@ -25,9 +25,9 @@ namespace Ui.Client.Controllers
 
         private ApplicationSignInManager _signInManager;
         private ApplicationUserManager _userManager;
+        private ApplicationRoleManager _roleManager;
         private IExampleService _exampleService;
         private IEmailService _emailService;
-        private ApplicationRoleManager _roleManager = null;
 
         public AccountController(IExampleService exampleService , IEmailService emailService)
         {
@@ -35,45 +35,11 @@ namespace Ui.Client.Controllers
             _emailService = emailService;
         }
 
-        public AccountController(ApplicationUserManager userManager, ApplicationSignInManager signInManager)
+        public AccountController(ApplicationUserManager userManager, ApplicationSignInManager signInManager , ApplicationRoleManager roleManager)
         {
-            UserManager = userManager;
-            SignInManager = signInManager;
-        }
-
-        protected ApplicationRoleManager RoleManager
-        {
-            get
-            {
-                return _roleManager ?? Request.GetOwinContext().GetUserManager<ApplicationRoleManager>();
-            }
-            private set
-            {
-                _roleManager = value;
-            }
-        }
-        public ApplicationSignInManager SignInManager
-        {
-            get
-            {
-                return _signInManager ?? HttpContext.GetOwinContext().Get<ApplicationSignInManager>();
-            }
-            private set
-            {
-                _signInManager = value;
-            }
-        }
-
-        public ApplicationUserManager UserManager
-        {
-            get
-            {
-                return _userManager ?? HttpContext.GetOwinContext().GetUserManager<ApplicationUserManager>();
-            }
-            private set
-            {
-                _userManager = value;
-            }
+            this._userManager = userManager;
+            this._signInManager = signInManager;
+            this._roleManager = roleManager;
         }
 
 
@@ -98,21 +64,21 @@ namespace Ui.Client.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var user = await UserManager.FindByEmailAsync(model.Email);
+            var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "User not found!");
                 return View(model);
             }
 
-            if (!await UserManager.IsEmailConfirmedAsync(user.Id))
+            if (!await _userManager.IsEmailConfirmedAsync(user.Id))
             {
                 ModelState.AddModelError(string.Empty, "Please confirm your email");
                 return View(model);
             }
 
 
-            var result = await SignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, shouldLockout: false);
+            var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, shouldLockout: false);
             switch (result)
             {
                 case SignInStatus.Success:
@@ -142,7 +108,7 @@ namespace Ui.Client.Controllers
             if (!ModelState.IsValid) return View(model);
 
 
-            var email = await UserManager.FindByEmailAsync(model.Email);
+            var email = await _userManager.FindByEmailAsync(model.Email);
             if (email != null)
             {
                 ModelState.AddModelError(string.Empty, "Email already exists!");
@@ -155,7 +121,7 @@ namespace Ui.Client.Controllers
                 Email = model.Email,
                 PhoneNumber = model.Phone
             };
-            var result = await UserManager.CreateAsync(newUser, model.Password);
+            var result = await _userManager.CreateAsync(newUser, model.Password);
 
             if (!result.Succeeded)
             {
@@ -166,19 +132,19 @@ namespace Ui.Client.Controllers
                 }
             }
 
-            var user = await UserManager.FindByEmailAsync(model.Email);
+            var user = await _userManager.FindByEmailAsync(model.Email);
 
-            if (!await RoleManager.RoleExistsAsync(UserRolesVm.Admin))
-                await RoleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.Admin });
+            if (!await _roleManager.RoleExistsAsync(UserRolesVm.Admin))
+                await _roleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.Admin });
 
-            if (!await RoleManager.RoleExistsAsync(UserRolesVm.User))
-                await RoleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.User });
+            if (!await _roleManager.RoleExistsAsync(UserRolesVm.User))
+                await _roleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.User });
 
-            if (await RoleManager.RoleExistsAsync(UserRolesVm.User))
-                await UserManager.AddToRoleAsync(user.Id, UserRolesVm.User);
+            if (await _roleManager.RoleExistsAsync(UserRolesVm.User))
+                await _userManager.AddToRoleAsync(user.Id, UserRolesVm.User);
 
             // Send Email Confirmation Code
-            var code = await UserManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
+            var code = await _userManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
             await _emailService.SendEmailAsync(new EmailModel(user.Email, "Email confirmation", "Your security code is" + code));
 
             return RedirectToAction("ConfirmEmailCode", new { email = model.Email });
@@ -198,7 +164,7 @@ namespace Ui.Client.Controllers
             if (!ModelState.IsValid) return View(model);
 
             // Send Email Confirmation Code
-            var user = await UserManager.FindByEmailAsync(model.Email);
+            var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "User not found");
@@ -209,7 +175,7 @@ namespace Ui.Client.Controllers
                 ModelState.AddModelError(string.Empty, "User email confirmed before");
                 return View(model);
             }
-            var code = await UserManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
+            var code = await _userManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
             await _emailService.SendEmailAsync(new EmailModel(user.Email, "Email confirmation", "Your security code is" + code));
             return RedirectToAction("Login");
         }
@@ -236,14 +202,14 @@ namespace Ui.Client.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
-            var user = UserManager.Users.SingleOrDefault(u => u.Email == model.Email);
+            var user = _userManager.Users.SingleOrDefault(u => u.Email == model.Email);
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "User not found!");
                 return View();
             }
 
-            var result = await UserManager.ChangePhoneNumberAsync(user.Id, model.Email, model.Code);
+            var result = await _userManager.ChangePhoneNumberAsync(user.Id, model.Email, model.Code);
             if (!result.Succeeded)
             {
                 ModelState.AddModelError(string.Empty, "Code is not valid");
@@ -252,7 +218,7 @@ namespace Ui.Client.Controllers
 
             user.EmailConfirmed = true;
             user.PhoneNumberConfirmed = false;
-            await UserManager.UpdateAsync(user);
+            await _userManager.UpdateAsync(user);
 
             return RedirectToAction("Login");
         }
@@ -275,20 +241,20 @@ namespace Ui.Client.Controllers
             {
                 return View(model);
             }
-            var user = await UserManager.FindByNameAsync(model.Email);
+            var user = await _userManager.FindByNameAsync(model.Email);
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "User not found");
                 return View();
             }
-            if (!(await UserManager.IsEmailConfirmedAsync(user.Id)))
+            if (!(await _userManager.IsEmailConfirmedAsync(user.Id)))
             {
                 ModelState.AddModelError(string.Empty, "Please confirm your email");
                 return View();
             }
 
             // Send an email with this link
-            string code = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
+            string code = await _userManager.GeneratePasswordResetTokenAsync(user.Id);
             var callbackUrl = Url.Action("ResetPassword", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
             await _emailService.SendEmailAsync(new EmailModel(user.Email, "Reset Password", "Please reset your password by clicking <a href=\"" + callbackUrl + "\">here</a>"));
             return RedirectToAction("ForgotPasswordConfirmation", "Account");
@@ -318,11 +284,11 @@ namespace Ui.Client.Controllers
             if (!ModelState.IsValid) return View(model);
 
 
-            var user = await UserManager.FindByNameAsync(model.Email);
+            var user = await _userManager.FindByNameAsync(model.Email);
             if (user == null) return RedirectToAction("ResetPasswordConfirmation", "Account");
 
 
-            var result = await UserManager.ResetPasswordAsync(user.Id, model.Code, model.Password);
+            var result = await _userManager.ResetPasswordAsync(user.Id, model.Code, model.Password);
             if (result.Succeeded) return RedirectToAction("Login", "Account");
 
             AddErrors(result);
@@ -350,7 +316,7 @@ namespace Ui.Client.Controllers
             }
 
             // Sign in the user with this external login provider if the user already has a login
-            var result = await SignInManager.ExternalSignInAsync(loginInfo, isPersistent: false);
+            var result = await _signInManager.ExternalSignInAsync(loginInfo, isPersistent: false);
             switch (result)
             {
                 case SignInStatus.Success:
@@ -385,13 +351,13 @@ namespace Ui.Client.Controllers
                     return View("ExternalLoginFailure");
                 }
                 var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
-                var result = await UserManager.CreateAsync(user);
+                var result = await _userManager.CreateAsync(user);
                 if (result.Succeeded)
                 {
-                    result = await UserManager.AddLoginAsync(user.Id, info.Login);
+                    result = await _userManager.AddLoginAsync(user.Id, info.Login);
                     if (result.Succeeded)
                     {
-                        await SignInManager.SignInAsync(user, isPersistent: false, rememberBrowser: false);
+                        await _signInManager.SignInAsync(user, isPersistent: false, rememberBrowser: false);
                         return RedirectToLocal(returnUrl);
                     }
                 }

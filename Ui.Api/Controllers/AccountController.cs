@@ -25,47 +25,19 @@ namespace Ui.Api.Controllers
     {
         #region Connections
 
-        private const string LocalLoginProvider = "Local";
         private ApplicationUserManager _userManager;
+        private ApplicationRoleManager _roleManager;
         private IExampleService _exampleService;
         private IEmailService _emailService;
-        private ApplicationRoleManager _roleManager = null;
         private ITokenGeneratorService _tokenGeneratorService;
 
-        public AccountController(IExampleService exampleService, IEmailService emailService , ITokenGeneratorService tokenGeneratorService)
+        public AccountController(IExampleService exampleService, IEmailService emailService , ITokenGeneratorService tokenGeneratorService , ApplicationUserManager userManager, ApplicationRoleManager roleManager)
         {
             _exampleService = exampleService;
             _emailService = emailService;
             _tokenGeneratorService = tokenGeneratorService;
-        }
-
-        public AccountController(ApplicationUserManager userManager)
-        {
-            UserManager = userManager;
-        }
-
-        public ApplicationUserManager UserManager
-        {
-            get
-            {
-                return _userManager ?? Request.GetOwinContext().GetUserManager<ApplicationUserManager>();
-            }
-            private set
-            {
-                _userManager = value;
-            }
-        }
-
-        protected ApplicationRoleManager RoleManager
-        {
-            get
-            {
-                return _roleManager ?? Request.GetOwinContext().GetUserManager<ApplicationRoleManager>();
-            }
-            private set
-            {
-                _roleManager = value;
-            }
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         #endregion
@@ -79,7 +51,7 @@ namespace Ui.Api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var email = await UserManager.FindByEmailAsync(model.Email);
+            var email = await _userManager.FindByEmailAsync(model.Email);
             if (email != null) return BadRequest("Email already exists!");
 
 
@@ -88,23 +60,23 @@ namespace Ui.Api.Controllers
                 UserName = model.Email,
                 Email = model.Email
             };
-            var result = await UserManager.CreateAsync(newUser, model.Password);
+            var result = await _userManager.CreateAsync(newUser, model.Password);
 
             if (!result.Succeeded) return BadRequest("User creation failed! Please check user details and try again.");
 
-            var user = await UserManager.FindByEmailAsync(model.Email);
-            if (!await RoleManager.RoleExistsAsync(UserRolesVm.Admin))
-                await RoleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.Admin });
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (!await _roleManager.RoleExistsAsync(UserRolesVm.Admin))
+                await _roleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.Admin });
 
-            if (!await RoleManager.RoleExistsAsync(UserRolesVm.User))
-                await RoleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.User });
+            if (!await _roleManager.RoleExistsAsync(UserRolesVm.User))
+                await _roleManager.CreateAsync(new IdentityRole() { Name = UserRolesVm.User });
 
-            if (await RoleManager.RoleExistsAsync(UserRolesVm.User))
-                await UserManager.AddToRoleAsync(user.Id, UserRolesVm.User);
+            if (await _roleManager.RoleExistsAsync(UserRolesVm.User))
+                await _userManager.AddToRoleAsync(user.Id, UserRolesVm.User);
 
             // Send Email Confirmation Code
-            var code = await UserManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
-            await _emailService.SendEmailAsync(new EmailModel(user.Email, "Email confirmation", "Your security code is" + code));
+            //var code = await _userManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
+            //await _emailService.SendEmailAsync(new EmailModel(user.Email, "Email confirmation", "Your security code is" + code));
 
             return Ok("User created successfully! please confirm your email");
         }
@@ -118,7 +90,7 @@ namespace Ui.Api.Controllers
 
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var email = await UserManager.FindByEmailAsync(model.Email);
+            var email = await _userManager.FindByEmailAsync(model.Email);
 
             if (email != null) return BadRequest("User already exists!");
 
@@ -127,21 +99,21 @@ namespace Ui.Api.Controllers
                 UserName = model.Email,
                 Email = model.Email
             };
-            var result = await UserManager.CreateAsync(user, model.Password);
+            var result = await _userManager.CreateAsync(user, model.Password);
 
 
             if (!result.Succeeded)
                 return BadRequest("User creation failed! Please check user details and try again.");
 
 
-            if (!await RoleManager.RoleExistsAsync(UserRolesVm.Admin))
-                await RoleManager.CreateAsync(new IdentityRole(UserRolesVm.Admin));
+            if (!await _roleManager.RoleExistsAsync(UserRolesVm.Admin))
+                await _roleManager.CreateAsync(new IdentityRole(UserRolesVm.Admin));
 
-            if (!await RoleManager.RoleExistsAsync(UserRolesVm.User))
-                await RoleManager.CreateAsync(new IdentityRole(UserRolesVm.User));
+            if (!await _roleManager.RoleExistsAsync(UserRolesVm.User))
+                await _roleManager.CreateAsync(new IdentityRole(UserRolesVm.User));
 
-            if (await RoleManager.RoleExistsAsync(UserRolesVm.Admin))
-                await UserManager.AddToRoleAsync(user.Id, UserRolesVm.Admin);
+            if (await _roleManager.RoleExistsAsync(UserRolesVm.Admin))
+                await _userManager.AddToRoleAsync(user.Id, UserRolesVm.Admin);
 
             return Ok("Admin created successfully!");
         }
@@ -153,12 +125,12 @@ namespace Ui.Api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var user = await UserManager.FindByEmailAsync(model.Email);
-            if (user != null && await UserManager.CheckPasswordAsync(user, model.Password))
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
             {
-                if (!await UserManager.IsEmailConfirmedAsync(user.Id)) return BadRequest("Please confirm your email");
+                if (!await _userManager.IsEmailConfirmedAsync(user.Id)) return BadRequest("Please confirm your email");
 
-                var userRoles = await UserManager.GetRolesAsync(user.Id);
+                var userRoles = await _userManager.GetRolesAsync(user.Id);
 
                 string accessToken = _tokenGeneratorService.GenerateToken(user, userRoles);
                 string refreshToken = _tokenGeneratorService.GenerateRefreshToken();
@@ -193,14 +165,14 @@ namespace Ui.Api.Controllers
             if (res == null) return BadRequest("Invalid refresh token");
 
 
-            var user = await UserManager.FindByIdAsync(res.UserId);
+            var user = await _userManager.FindByIdAsync(res.UserId);
             if (user == null) return BadRequest("User not found");
 
 
 
             await _tokenGeneratorService.DeleteRefreshToken(res.Id);
 
-            var userRoles = await UserManager.GetRolesAsync(user.Id);
+            var userRoles = await _userManager.GetRolesAsync(user.Id);
             string accessToken = _tokenGeneratorService.GenerateToken(user, userRoles);
             string refreshToken = _tokenGeneratorService.GenerateRefreshToken();
 
@@ -223,7 +195,7 @@ namespace Ui.Api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var user = await UserManager.FindByEmailAsync(model.Email);
+            var user = await _userManager.FindByEmailAsync(model.Email);
 
             if (user == null) return BadRequest("User not found");
 
@@ -231,7 +203,7 @@ namespace Ui.Api.Controllers
             if (user.EmailConfirmed) return BadRequest("User email confirmed before");
 
 
-            var code = await UserManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
+            var code = await _userManager.GenerateChangePhoneNumberTokenAsync(user.Id, user.Email);
             await _emailService.SendEmailAsync(new EmailModel(user.Email, "Confirm email", "Your security code is" + code));
 
             return Ok("Confirmation email sent successfully!");
@@ -245,17 +217,17 @@ namespace Ui.Api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var user = UserManager.Users.SingleOrDefault(u => u.Email == model.Email);
+            var user = _userManager.Users.SingleOrDefault(u => u.Email == model.Email);
 
             if (user == null) return BadRequest("User not found");
 
-            var result = await UserManager.ChangePhoneNumberAsync(user.Id, model.Email, model.Code);
+            var result = await _userManager.ChangePhoneNumberAsync(user.Id, model.Email, model.Code);
 
             if (!result.Succeeded) return BadRequest("Email is not confirmed");
 
             user.EmailConfirmed = true;
             user.PhoneNumberConfirmed = false;
-            await UserManager.UpdateAsync(user);
+            await _userManager.UpdateAsync(user);
 
             return Ok("Your email confirmed successfully!");
         }
@@ -268,12 +240,12 @@ namespace Ui.Api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var user = await UserManager.FindByEmailAsync(model.Email);
+            var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null) return BadRequest("User is not exists!");
 
-            if (!await UserManager.IsEmailConfirmedAsync(user.Id)) return BadRequest("Please confirm your email");
+            if (!await _userManager.IsEmailConfirmedAsync(user.Id)) return BadRequest("Please confirm your email");
 
-            var code = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
+            var code = await _userManager.GeneratePasswordResetTokenAsync(user.Id);
             //var callBackUrl = Url.Route("ResetPassword", new { Email = user.Email, Token = code });
             var callBackUrl = $"https://localhost:44305/Account/ResetPassword?userId= { user.Id }&code={ code }";
             await _emailService.SendEmailAsync(new EmailModel(user.Email, "Reset Password", "Please reset your password by clicking <a href=\"" + callBackUrl + "\">here</a>"));
@@ -288,13 +260,13 @@ namespace Ui.Api.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var user = await UserManager.FindByEmailAsync(model.Email);
+            var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null) return BadRequest("User is not exists!");
 
-            if (!await UserManager.IsEmailConfirmedAsync(user.Id)) return BadRequest("Please confirm your email");
+            if (!await _userManager.IsEmailConfirmedAsync(user.Id)) return BadRequest("Please confirm your email");
 
             
-            var result = await UserManager.ResetPasswordAsync(user.Id, model.Code, model.Password);
+            var result = await _userManager.ResetPasswordAsync(user.Id, model.Code, model.Password);
             if (!result.Succeeded) return BadRequest("Something is wrong");
 
             return Ok("Password Changed successfully!");

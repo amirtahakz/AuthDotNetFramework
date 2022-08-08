@@ -83,42 +83,21 @@
     <Compile Include="Entities\BaseEntity.cs" />
     <Compile Include="Entities\Example.cs" />
     <Compile Include="Entities\UserRefreshToken.cs" />
-    <Compile Include="Migrations\202202171203174_AddDb.cs" />
-    <Compile Include="Migrations\202202171203174_AddDb.designer.cs">
-      <DependentUpon>202202171203174_AddDb.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202202270523389_AddRoleTbl.cs" />
-    <Compile Include="Migrations\202202270523389_AddRoleTbl.designer.cs">
-      <DependentUpon>202202270523389_AddRoleTbl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202202270541252_UpdateRoleTbl.cs" />
-    <Compile Include="Migrations\202202270541252_UpdateRoleTbl.designer.cs">
-      <DependentUpon>202202270541252_UpdateRoleTbl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Migrations\202202271303199_AddUserRefreshTokensTbl.cs" />
-    <Compile Include="Migrations\202202271303199_AddUserRefreshTokensTbl.designer.cs">
-      <DependentUpon>202202271303199_AddUserRefreshTokensTbl.cs</DependentUpon>
+    <Compile Include="Migrations\202208081409599_AddDb.cs" />
+    <Compile Include="Migrations\202208081409599_AddDb.designer.cs">
+      <DependentUpon>202208081409599_AddDb.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Migrations\202202171203174_AddDb.resx">
-      <DependentUpon>202202171203174_AddDb.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202202270523389_AddRoleTbl.resx">
-      <DependentUpon>202202270523389_AddRoleTbl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202202270541252_UpdateRoleTbl.resx">
-      <DependentUpon>202202270541252_UpdateRoleTbl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Migrations\202202271303199_AddUserRefreshTokensTbl.resx">
-      <DependentUpon>202202271303199_AddUserRefreshTokensTbl.cs</DependentUpon>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations\202208081409599_AddDb.resx">
+      <DependentUpon>202208081409599_AddDb.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
