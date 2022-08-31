@@ -83,9 +83,9 @@
     <Compile Include="Entities\BaseEntity.cs" />
     <Compile Include="Entities\Example.cs" />
     <Compile Include="Entities\UserRefreshToken.cs" />
-    <Compile Include="Migrations\202208081409599_AddDb.cs" />
-    <Compile Include="Migrations\202208081409599_AddDb.designer.cs">
-      <DependentUpon>202208081409599_AddDb.cs</DependentUpon>
+    <Compile Include="Migrations\202208310847019_AddDb.cs" />
+    <Compile Include="Migrations\202208310847019_AddDb.designer.cs">
+      <DependentUpon>202208310847019_AddDb.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -95,8 +95,8 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Migrations\202208081409599_AddDb.resx">
-      <DependentUpon>202208081409599_AddDb.cs</DependentUpon>
+    <EmbeddedResource Include="Migrations\202208310847019_AddDb.resx">
+      <DependentUpon>202208310847019_AddDb.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

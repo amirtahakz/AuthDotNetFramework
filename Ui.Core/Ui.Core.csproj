@@ -147,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repositories\IBaseService.cs" />
     <Compile Include="Repositories\IEmailService.cs" />
     <Compile Include="Repositories\IExampleService.cs" />
     <Compile Include="Repositories\ITokenGeneratorService.cs" />

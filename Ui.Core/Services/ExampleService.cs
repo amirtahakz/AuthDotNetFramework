@@ -16,6 +16,7 @@ namespace Ui.Core.Services
         //At First Add Unity
         public ExampleService(ApplicationDbContext context) : base(context) { }
 
+
         #endregion
 
         #region Methods
